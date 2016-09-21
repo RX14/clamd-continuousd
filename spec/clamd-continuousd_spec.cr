@@ -1,9 +1,9 @@
 require "./spec_helper"
+require "yaml"
 
 describe Clamd::Continuousd do
-  # TODO: Write tests
-
-  it "works" do
-    false.should eq(true)
+  it "has the correct version" do
+    version = YAML.parse(File.read(File.join(__DIR__, "..", "shard.yml")))["version"].as_s
+    version.should eq(Clamd::Continuousd::VERSION)
   end
 end
