@@ -2,7 +2,7 @@ module Clamd::Continuousd
   class Scheduler
     record Rule,
       id : Int64,
-      handler : Proc(Time),
+      handler : Proc(Time) | Proc(Time?) | Proc(Nil),
       next_time : Time
 
     @rules : Array(Rule)
@@ -69,7 +69,7 @@ module Clamd::Continuousd
           break if rule != sleep_rule
 
           next_time = rule.handler.call
-          add_rule(rule.handler, next_time, rule.id)
+          add_rule(rule.handler, next_time, rule.id) if next_time
         end
       end
     end
