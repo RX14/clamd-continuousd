@@ -1,0 +1,6 @@
+version: 1.0
+shards:
+  clamd:
+    github: RX14/clamd.cr
+    commit: bccbbdfeb335cf911200f16c204177c878fb80d2
+

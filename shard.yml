@@ -5,3 +5,7 @@ authors:
   - RX14 <chris@rx14.co.uk>
 
 license: MIT
+
+dependencies:
+  clamd:
+    github: RX14/clamd.cr
