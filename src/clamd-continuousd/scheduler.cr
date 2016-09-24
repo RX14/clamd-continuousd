@@ -1,10 +1,12 @@
 module Clamd::Continuousd
   class Scheduler
     record Rule,
+      id : Int64,
       handler : Proc(Time),
       next_time : Time
 
     @rules : Array(Rule)
+    @next_rule_id = 0_i64
     @mutex = Mutex.new
 
     def initialize
@@ -12,13 +14,18 @@ module Clamd::Continuousd
     end
 
     def rules
-      @rules.dup
+      @mutex.synchronize { @rules.dup }
     end
 
-    def add_rule(handler, next_time)
-      rule = Rule.new(handler, next_time)
-
+    def add_rule(handler, next_time : Time, rule_id = nil) : Int64
       @mutex.synchronize do
+        if rule_id
+          rule = Rule.new(rule_id, handler, next_time)
+        else
+          rule = Rule.new(@next_rule_id, handler, next_time)
+          @next_rule_id += 1
+        end
+
         found_index = @rules.bsearch_index { |item| item.next_time <= rule.next_time }
 
         if found_index
@@ -26,17 +33,19 @@ module Clamd::Continuousd
         else
           @rules.push(rule)
         end
+
+        rule.id
       end
-
-      nil
     end
 
-    def add_rule(handler)
-      add_rule(handler, handler.call)
+    def add_rule(handler, rule_id = nil)
+      add_rule(handler, handler.call, rule_id)
     end
 
-    def remove_rule(rule)
-      @mutex.synchronize { @rules.delete(rule) }
+    def remove_rule(id : Int64)
+      @mutex.synchronize do
+        @rules.reject! { |rule| rule.id == id }
+      end
     end
 
     def next_rule
@@ -58,7 +67,9 @@ module Clamd::Continuousd
           rule = @rules.pop?
           break unless rule
           break if rule != sleep_rule
-          add_rule(rule.handler) # This runs the proc
+
+          next_time = rule.handler.call
+          add_rule(rule.handler, next_time, rule.id)
         end
       end
     end
