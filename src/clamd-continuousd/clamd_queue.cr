@@ -9,6 +9,13 @@ module Clamd::Continuousd
     def initialize(host, port, @workers = 2)
       @connection_info = {host, port.to_i}
       @queue = Channel(String).new(20)
+
+      begin
+        connection = get_connection
+        raise "Cannot connect to clamd using #{@connection_info}" unless connection.ping == "PONG"
+      ensure
+        connection.try &.close
+      end
     end
 
     def scan(path)
@@ -20,12 +27,7 @@ module Clamd::Continuousd
     end
 
     private def worker
-      connection_info = @connection_info
-      if connection_info.is_a? {String, Int32}
-        connection = Clamd::Connection.connect_tcp(*connection_info)
-      else
-        connection = Clamd::Connection.connect_unix(connection_info)
-      end
+      connection = get_connection
 
       loop do
         begin
@@ -40,6 +42,17 @@ module Clamd::Continuousd
         rescue ex
           ex.inspect_with_backtrace(STDERR)
         end
+      end
+    ensure
+      connection.try &.close
+    end
+
+    private def get_connection
+      connection_info = @connection_info
+      if connection_info.is_a? {String, Int32}
+        Clamd::Connection.connect_tcp(*connection_info)
+      else
+        Clamd::Connection.connect_unix(connection_info)
       end
     end
 
