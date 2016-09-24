@@ -16,6 +16,6 @@ describe Clamd::Continuousd::Scheduler do
     times[2].should be_close(1.second.from_now, 1.millisecond)
     times[3].should be_close(1.second.from_now, 1.millisecond)
 
-    sched.next_rule.next_time.should be_close(1.second.from_now, 1.millisecond)
+    sched.next_rule.not_nil!.next_time.should be_close(1.second.from_now, 1.millisecond)
   end
 end

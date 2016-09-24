@@ -40,18 +40,23 @@ module Clamd::Continuousd
     end
 
     def next_rule
-      @mutex.synchronize { @rules.last }
+      @mutex.synchronize { @rules[-1]? }
     end
 
     def process_rules
       loop do
         sleep_rule = next_rule
+        if !sleep_rule
+          sleep 5.milliseconds
+          next
+        end
 
         sleep_time = sleep_rule.next_time - Time.now
         sleep sleep_time if sleep_time.ticks > 0
 
         @mutex.synchronize do
-          rule = @rule.pop
+          rule = @rules.pop?
+          break unless rule
           break if rule != sleep_rule
           add_rule(rule.handler) # This runs the proc
         end
