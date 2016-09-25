@@ -32,38 +32,39 @@ module Clamd::Continuousd
     logger.info "Starting up (dirs: #{dirs})", "main"
     dirs.each { |d| check_dir(d) }
 
-    spawn { @@scheduler.process_rules }
-    @@clamd.spawn_workers
-
     files = FileCache.new(dirs, ->handle_dir_change(FileOperation, FileInfo))
     spawn { files.start_watching }
-    spawn do
-      # Add all files, delayed
-      dirs.each do |dir|
-        entries = Dir.entries(dir)
-        entries.shuffle!
 
-        ten_percent = entries.size / 10
-        entries.each_with_index do |file, i|
-          logger.info "Starting up: #{(i * 100 / entries.size)}%", "main" if i % ten_percent == 0
+    # Add all existing files
+    dirs.each do |dir|
+      entries = Dir.entries(dir)
+      entries.shuffle!
 
-          path = File.join(dir, file)
-          file_info = File.stat(path)
-          next unless file_info.file?
+      ten_percent = entries.size / 10
+      entries.each_with_index do |file, i|
+        logger.info "Starting up: #{(i * 100 / entries.size)}%", "main" if i % ten_percent == 0
 
-          scan_period = scan_period(file_info.mtime - Time.now)
-          next_scan = Time::Span.new(rand(scan_period.total_milliseconds) * Time::Span::TicksPerMillisecond).from_now
+        path = File.join(dir, file)
+        file_info = File.stat(path)
+        next unless file_info.file?
 
-          @@scheduler.add_rule(->{ files.update_file(path, file_info.mtime) }, next_scan)
-        end
+        scan_period = scan_period(file_info.mtime - Time.now)
+        next_scan = Time::Span.new(rand(scan_period.total_milliseconds) * Time::Span::TicksPerMillisecond).from_now
+
+        @@scheduler.add_rule(->{ files.update_file(path, file_info.mtime) }, next_scan)
       end
+    end
 
+    spawn do
       # Keep dir up to date
       loop do
         sleep 1.hour
         files.update_directory
       end
     end
+
+    spawn { @@scheduler.process_rules }
+    @@clamd.spawn_workers
 
     server = HTTP::Server.new(8080) do |ctx|
       ctx.response.content_type = "application/json"
