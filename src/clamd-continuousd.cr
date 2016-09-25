@@ -78,12 +78,13 @@ module Clamd::Continuousd
   private def self.handle_dir_change(op, info)
     case op
     when FileOperation::Update
-      logger.info "File updated: #{info.path}", "main"
+      logger.debug "File updated: #{info.path}", "main"
       if rule_id = @@path_rule_map[info.path]?
         @@scheduler.remove_rule(rule_id)
       end
 
       rule_id = @@scheduler.add_rule(->{
+        logger.debug "Running rule for #{info.path}", "main"
         @@clamd.scan(info.path)
 
         file_age = info.modified - Time.now
@@ -92,7 +93,7 @@ module Clamd::Continuousd
 
       @@path_rule_map[info.path] = rule_id
     when FileOperation::Delete
-      logger.info "File deleted: #{info.path}", "main"
+      logger.debug "File deleted: #{info.path}", "main"
       rule_id = @@path_rule_map[info.path]?
       @@scheduler.remove_rule(rule_id) if rule_id
     end

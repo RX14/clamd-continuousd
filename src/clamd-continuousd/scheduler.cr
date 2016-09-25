@@ -69,8 +69,6 @@ module Clamd::Continuousd
           break unless rule
           break if rule != sleep_rule
 
-          Continuousd.logger.debug "Running rule #{rule.id}", "sched"
-
           next_time = rule.handler.call
           add_rule(rule.handler, next_time, rule.id) if next_time
         end
