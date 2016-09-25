@@ -1,5 +1,6 @@
 require "http"
 require "json"
+require "logger"
 
 require "./clamd-continuousd/*"
 
@@ -10,12 +11,25 @@ class Channel::Buffered(T)
 end
 
 module Clamd::Continuousd
+  @@logger : Logger?
   @@path_rule_map = Hash(String, Int64).new
   @@scheduler = Scheduler.new
   @@clamd = ClamdQueue.new(ENV["CLAMD_HOST"], ENV["CLAMD_PORT"])
 
+  def self.logger
+    @@logger ||= begin
+                   l = Logger.new(STDOUT)
+                   l.level = ENV["DEBUG"]? ? Logger::DEBUG : Logger::INFO
+                   l.formatter = Logger::Formatter.new do |severity, datetime, progname, message, io|
+                     io << "[" << datetime << "]" << severity.rjust(5) << " " << progname << ": " << message
+                   end
+                   l
+                 end
+  end
+
   def self.start
     dirs = ARGV
+    logger.info "Starting up (dirs: #{dirs})", "main"
     dirs.each { |d| check_dir(d) }
 
     spawn { @@scheduler.process_rules }
@@ -58,6 +72,7 @@ module Clamd::Continuousd
   private def self.handle_dir_change(op, info)
     case op
     when FileOperation::Update
+      logger.info "File updated: #{info.path}", "main"
       if rule_id = @@path_rule_map[info.path]?
         @@scheduler.remove_rule(rule_id)
       end
@@ -71,6 +86,7 @@ module Clamd::Continuousd
 
       @@path_rule_map[info.path] = rule_id
     when FileOperation::Delete
+      logger.info "File deleted: #{info.path}", "main"
       rule_id = @@path_rule_map[info.path]?
       @@scheduler.remove_rule(rule_id) if rule_id
     end

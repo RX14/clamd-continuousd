@@ -19,6 +19,7 @@ module Clamd::Continuousd
     end
 
     def scan(path)
+      Continuousd.logger.debug "Queueing #{path} for scanning", "clamd"
       @queue.send(path)
     end
 
@@ -35,6 +36,7 @@ module Clamd::Continuousd
 
           next unless File.exists? path
           File.open(path) do |file|
+            Continuousd.logger.debug "Scanning #{path}", "clamd"
             result = connection.scan_stream(file)
 
             handle_found(path, result.signature) if result.status == Status::Virus
