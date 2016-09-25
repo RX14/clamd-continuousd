@@ -36,6 +36,8 @@ module Clamd::Continuousd
         event, name = read_inotify_event(io)
         path = File.join(wd_dir[event.wd], name)
 
+        Continuousd.logger.debug "Recieved filesystem event for #{name}: #{event.inspect}", "fscache"
+
         case event.mask
         when LibInotify::IN_CLOSE_WRITE
         when LibInotify::IN_CREATE

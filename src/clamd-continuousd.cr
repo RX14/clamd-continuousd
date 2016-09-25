@@ -21,7 +21,7 @@ module Clamd::Continuousd
                    l = Logger.new(STDOUT)
                    l.level = ENV["DEBUG"]? ? Logger::DEBUG : Logger::INFO
                    l.formatter = Logger::Formatter.new do |severity, datetime, progname, message, io|
-                     io << "[" << datetime << "]" << severity.rjust(5) << " " << progname << ": " << message
+                     io << "[" << datetime << "] " << progname.rjust(7) << " " << severity.rjust(5) << ": " << message
                    end
                    l
                  end
@@ -48,6 +48,8 @@ module Clamd::Continuousd
 
           scan_period = scan_period(file_info.mtime - Time.now)
           next_scan = Time::Span.new(rand(scan_period.ticks)).from_now
+
+          logger.debug "Scheduling first scan of #{file} for #{next_scan}", "main"
 
           @@scheduler.add_rule(->{ files.update_file(file, file_info.mtime) }, next_scan)
         end
