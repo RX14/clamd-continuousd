@@ -66,7 +66,7 @@ module Clamd::Continuousd
     spawn { @@scheduler.process_rules }
     @@clamd.spawn_workers
 
-    server = HTTP::Server.new(8080) do |ctx|
+    server = HTTP::Server.new("0.0.0.0", 8080) do |ctx|
       ctx.response.content_type = "application/json"
       {clamd_queue_size: @@clamd.@queue.queue_size}.to_json(ctx.response)
     end
