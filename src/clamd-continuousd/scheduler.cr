@@ -67,7 +67,10 @@ module Clamd::Continuousd
         @mutex.synchronize do
           rule = @rules.pop?
           break unless rule
-          break if rule != sleep_rule
+          if rule != sleep_rule
+            @rules.push(rule)
+            next
+          end
 
           next_time = rule.handler.call
           add_rule(rule.handler, next_time, rule.id) if next_time
