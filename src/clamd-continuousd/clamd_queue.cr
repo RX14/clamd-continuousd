@@ -24,10 +24,11 @@ module Clamd::Continuousd
     end
 
     def spawn_workers
-      @workers.times { spawn { worker } }
+      @workers.times { spawn { loop { worker } } }
     end
 
     private def worker
+      Continuousd.logger.info "Connecting to clamd!", "clamd"
       connection = get_connection
 
       loop do
