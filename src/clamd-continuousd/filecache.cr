@@ -52,7 +52,7 @@ module Clamd::Continuousd
       # Update file info for all files
       @watched_directories.each do |dir|
         Dir.entries(dir).each do |file|
-          file_info = File.stat(file)
+          file_info = File.stat(File.join(dir, file))
           update_file(file, file_info.mtime) if file_info.file?
         end
       end

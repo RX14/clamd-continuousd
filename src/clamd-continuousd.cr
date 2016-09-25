@@ -43,7 +43,7 @@ module Clamd::Continuousd
         entries = Dir.entries(dir)
         entries.shuffle!
         entries.each do |file|
-          file_info = File.stat(file)
+          file_info = File.stat(File.join(dir, file))
           next unless file_info.file?
 
           scan_period = scan_period(file_info.mtime - Time.now)
