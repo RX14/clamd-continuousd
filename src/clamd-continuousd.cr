@@ -47,7 +47,7 @@ module Clamd::Continuousd
           next unless file_info.file?
 
           scan_period = scan_period(file_info.mtime - Time.now)
-          next_scan = Time::Span.new(ticks: rand(0..(scan_period.ticks))).from_now
+          next_scan = Time::Span.new(rand(scan_period.total_milliseconds) * Time::Span::TicksPerMillisecond).from_now
 
           @@scheduler.add_rule(->{ files.update_file(file, file_info.mtime) }, next_scan)
         end
