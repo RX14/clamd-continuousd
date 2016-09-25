@@ -63,6 +63,7 @@ module Clamd::Continuousd
         end
 
         sleep_time = sleep_rule.next_time - Time.now
+        Continuousd.logger.debug "Sleeping #{sleep_time}", "sched"
         sleep sleep_time if sleep_time.ticks > 0
 
         @mutex.synchronize do
