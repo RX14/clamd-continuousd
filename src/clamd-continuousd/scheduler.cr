@@ -34,8 +34,6 @@ module Clamd::Continuousd
           @rules.push(rule)
         end
 
-        Continuousd.logger.debug "Scheduling rule #{rule.id} #{(next_time - Time.now).total_seconds} seconds from now", "sched"
-
         rule.id
       end
     end

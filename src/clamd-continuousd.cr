@@ -42,7 +42,11 @@ module Clamd::Continuousd
       dirs.each do |dir|
         entries = Dir.entries(dir)
         entries.shuffle!
-        entries.each do |file|
+
+        ten_percent = entries.size / 10
+        entries.each_with_index do |file, i|
+          logger.info "Starting up: #{(i * 100 / entries.size)}%", "main" if i % ten_percent == 0
+
           path = File.join(dir, file)
           file_info = File.stat(path)
           next unless file_info.file?
