@@ -11,10 +11,13 @@ class Channel::Buffered(T)
 end
 
 module Clamd::Continuousd
+  DIRECTORIES = ARGV
+
   @@logger : Logger?
   @@path_rule_map = Hash(String, Int64).new
   @@scheduler = Scheduler.new
   @@clamd = ClamdQueue.new(ENV["CLAMD_HOST"], ENV["CLAMD_PORT"])
+  @@files = FileCache.new(DIRECTORIES, ->handle_dir_change(FileOperation, FileInfo))
 
   def self.logger
     @@logger ||= begin
@@ -28,21 +31,19 @@ module Clamd::Continuousd
   end
 
   def self.start
-    dirs = ARGV
-    logger.info "Starting up (dirs: #{dirs})", "main"
-    dirs.each { |d| check_dir(d) }
+    logger.info "Starting up (dirs: #{DIRECTORIES})", "main"
+    DIRECTORIES.each { |d| check_dir(d) }
 
-    files = FileCache.new(dirs, ->handle_dir_change(FileOperation, FileInfo))
-    spawn { files.start_watching }
+    spawn { @@files.start_watching }
 
-    # Add all existing files
-    dirs.each do |dir|
+    # Add all existing files slowly
+    DIRECTORIES.each do |dir|
       entries = Dir.entries(dir)
       entries.shuffle!
 
       ten_percent = entries.size / 10
       entries.each_with_index do |file, i|
-        logger.info "Starting up: #{(i * 100 / entries.size)}%", "main" if i % ten_percent == 0
+        logger.info "Starting up (#{DIRECTORIES}): #{(i * 100 / entries.size)}%", "main" if i % ten_percent == 0
 
         path = File.join(dir, file)
         file_info = File.stat(path)
@@ -51,7 +52,7 @@ module Clamd::Continuousd
         scan_period = scan_period(file_info.mtime - Time.now)
         next_scan = Time::Span.new(rand(scan_period.total_milliseconds) * Time::Span::TicksPerMillisecond).from_now
 
-        @@scheduler.add_rule(->{ files.update_file(path, file_info.mtime) }, next_scan)
+        @@scheduler.add_rule(->{ @@files.update_file(path, file_info.mtime) }, next_scan)
       end
     end
 
