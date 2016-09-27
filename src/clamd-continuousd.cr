@@ -108,7 +108,7 @@ module Clamd::Continuousd
                 end
 
     # Randomise scan period by 10% either side
-    max_random_ticks = time_span.ticks.abs * 0.1_f64
+    max_random_ticks = time_span.ticks.abs * 0.1
     random_ticks = rand((-max_random_ticks)..max_random_ticks)
     Time::Span.new(time_span.ticks + random_ticks)
   end
