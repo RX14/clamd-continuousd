@@ -55,14 +55,6 @@ module Clamd::Continuousd
       end
     end
 
-    spawn do
-      # Keep dir up to date
-      loop do
-        sleep 1.hour
-        files.update_directory
-      end
-    end
-
     spawn { @@scheduler.process_rules }
     @@clamd.spawn_workers
 

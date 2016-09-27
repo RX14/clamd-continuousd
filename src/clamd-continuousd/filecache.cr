@@ -49,23 +49,6 @@ module Clamd::Continuousd
       end
     end
 
-    # Manually updates directory info
-    def update_directory
-      # Update file info for all files
-      @watched_directories.each do |dir|
-        Dir.entries(dir).each do |file|
-          path = File.join(dir, file)
-          file_info = File.stat(path)
-          update_file(path, file_info.mtime) if file_info.file?
-        end
-      end
-
-      # Check all entries exist
-      @files.each do |path, file_info|
-        remove_file(path) unless File.exists? path
-      end
-    end
-
     private def read_inotify_event(io)
       event = uninitialized LibInotify::Event
       io.read_fully(Slice(UInt8).new(pointerof(event).as(UInt8*), sizeof(LibInotify::Event)))
