@@ -43,6 +43,7 @@ module Clamd::Continuousd
             result = connection.scan_stream(file)
             time_finish = Time.now
 
+            Stats.submit_clamd_scan(time_start, time_finish - time_start)
             Continuousd.logger.debug "Scanned #{path} in #{time_finish - time_start}", "clamd"
 
             handle_found(path, result.signature) if result.status == Status::Virus

@@ -10,6 +10,12 @@ class Channel::Buffered(T)
   end
 end
 
+struct Time::Span
+  def self.zero
+    new(0)
+  end
+end
+
 module Clamd::Continuousd
   DIRECTORIES = ARGV
 
@@ -50,6 +56,7 @@ module Clamd::Continuousd
         next unless file_info.file?
 
         scan_period = scan_period(file_info.mtime - Time.now)
+        # Use ticks after cr#3350 is fixed
         next_scan = Time::Span.new(rand(scan_period.total_milliseconds) * Time::Span::TicksPerMillisecond).from_now
 
         @@scheduler.add_rule(->{ @@files.update_file(path, file_info.mtime) }, next_scan)
@@ -61,7 +68,19 @@ module Clamd::Continuousd
 
     server = HTTP::Server.new("0.0.0.0", 8080) do |ctx|
       ctx.response.content_type = "application/json"
-      {clamd_queue_size: @@clamd.@queue.queue_size}.to_json(ctx.response)
+      {
+        clamd_queue_size: @@clamd.@queue.queue_size,
+
+        scans_per_second_5m: Stats.scans_per_second_5m,
+        avg_scan_time_5m: Stats.avg_scan_duration_5m,
+        executor_utilization_frac_5m: Stats.executor_utilization_frac_5m,
+
+        scans_per_second_10s: Stats.scans_per_second_10s,
+        avg_scan_time_10s: Stats.avg_scan_duration_10s,
+        executor_utilization_frac_10s: Stats.executor_utilization_frac_10s,
+
+        new_files_per_hour: Stats.new_files_per_hour(@@files.files.values)
+      }.to_json(ctx.response)
     end
     spawn { server.listen }
 
