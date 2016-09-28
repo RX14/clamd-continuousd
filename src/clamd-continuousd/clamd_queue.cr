@@ -28,7 +28,6 @@ module Clamd::Continuousd
     end
 
     private def worker
-      Continuousd.logger.info "Connecting to clamd!", "clamd"
       connection = get_connection
 
       loop do
@@ -48,6 +47,9 @@ module Clamd::Continuousd
               rescue ex
                 STDERR.puts "Exception thrown while scanning (try #{try}):"
                 ex.inspect_with_backtrace(STDERR)
+
+                connection.close
+                connection = get_connection
 
                 sleep 4**try if try < 3
               end
@@ -70,6 +72,8 @@ module Clamd::Continuousd
     end
 
     private def get_connection
+      Continuousd.logger.info "Connecting to clamd!", "clamd"
+
       connection_info = @connection_info
       if connection_info.is_a? {String, Int32}
         Clamd::Connection.connect_tcp(*connection_info)
