@@ -83,7 +83,7 @@ module Clamd::Continuousd
         executor_utilization_frac_5m: Stats.executor_utilization_frac_5m,
         executor_utilization_frac_10s: Stats.executor_utilization_frac_10s,
 
-        new_files_per_hour: Stats.new_files_per_hour(@@files.files.values),
+        new_files_per_hour: Stats.new_files_per_hour(@@files.files.each_value),
         startup_file_count: @@startup_file_count,
         current_files: @@files.files.size
       }.to_json(ctx.response)

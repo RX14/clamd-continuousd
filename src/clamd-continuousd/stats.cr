@@ -56,7 +56,7 @@ module Clamd::Continuousd
       scan_time.total_seconds / (5 * 60.0)
     end
 
-    def self.new_files_per_hour(files : Array(FileInfo))
+    def self.new_files_per_hour(files : Iterator(FileInfo))
       now = Time.now
       files.select { |info| (now - info.modified) <= 1.hour }.size
     end
