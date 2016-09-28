@@ -54,6 +54,10 @@ module Clamd::Continuousd
               try += 1
             end
 
+            break unless result
+            break unless time_start
+            break unless time_finish
+
             Stats.submit_clamd_scan(time_start, time_finish - time_start)
             Continuousd.logger.debug "Scanned #{path} in #{time_finish - time_start}", "clamd"
 
