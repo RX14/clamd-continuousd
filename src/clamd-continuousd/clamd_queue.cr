@@ -24,7 +24,7 @@ module Clamd::Continuousd
     end
 
     def spawn_workers
-      @workers.times { spawn { loop { worker } } }
+      @workers.times { spawn { worker } }
     end
 
     private def worker
@@ -39,17 +39,26 @@ module Clamd::Continuousd
           File.open(path) do |file|
             Continuousd.logger.debug "Scanning #{path}", "clamd"
 
-            time_start = Time.now
-            result = connection.scan_stream(file)
-            time_finish = Time.now
+            try = 1
+            while try <= 3
+              begin
+                time_start = Time.now
+                result = connection.scan_stream(file)
+                time_finish = Time.now
+              rescue ex
+                STDERR.puts "Exception thrown while scanning (try #{try}):"
+                ex.inspect_with_backtrace(STDERR)
+
+                sleep 4**try if try < 3
+              end
+              try += 1
+            end
 
             Stats.submit_clamd_scan(time_start, time_finish - time_start)
             Continuousd.logger.debug "Scanned #{path} in #{time_finish - time_start}", "clamd"
 
             handle_found(path, result.signature) if result.status == Status::Virus
           end
-        rescue ex
-          ex.inspect_with_backtrace(STDERR)
         end
       end
     ensure
