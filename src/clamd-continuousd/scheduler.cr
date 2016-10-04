@@ -72,7 +72,13 @@ module Clamd::Continuousd
             next
           end
 
-          next_time = rule.handler.call
+          begin
+            next_time = rule.handler.call
+          rescue ex
+            puts "Recieved error from handler:"
+            ex.inspect_with_backtrace(STDOUT)
+          end
+
           add_rule(rule.handler, next_time, rule.id) if next_time
         end
       end
