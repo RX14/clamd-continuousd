@@ -11,19 +11,18 @@ class Channel::Buffered(T)
 end
 
 module Clamd::Continuousd
-  DIRECTORIES = ARGV
-
   @@logger : Logger?
   @@path_rule_map = Hash(String, Int64).new
   @@scheduler = Scheduler.new
-  @@clamd = ClamdQueue.new(ENV["CLAMD_HOST"], ENV["CLAMD_PORT"])
-  @@files = FileCache.new(DIRECTORIES, ->handle_dir_change(FileOperation, FileInfo))
+  @@clamd = ClamdQueue.new(CONFIG.clamd.host, CONFIG.clamd.port)
+  @@files = FileCache.new(CONFIG.sites.map &.dir, ->handle_dir_change(FileOperation, FileInfo))
+  @@cloudflare = Cloudflare.new
   @@startup_file_count = 0
 
   def self.logger
     @@logger ||= begin
                    l = Logger.new(STDOUT)
-                   l.level = ENV["DEBUG"]? ? Logger::DEBUG : Logger::INFO
+                   l.level = CONFIG.debug ? Logger::DEBUG : Logger::INFO
                    l.formatter = Logger::Formatter.new do |severity, datetime, progname, message, io|
                      io << "[" << datetime << "] " << progname.rjust(7) << " " << severity.rjust(5) << ": " << message
                    end
@@ -32,13 +31,14 @@ module Clamd::Continuousd
   end
 
   def self.start
-    logger.info "Starting up (dirs: #{DIRECTORIES})", "main"
-    DIRECTORIES.each { |d| check_dir(d) }
+    dirs = CONFIG.sites.map &.dir
+    logger.info "Starting up (dirs: #{dirs})", "main"
+    dirs.each { |d| check_dir(d) }
 
     spawn { @@files.start_watching }
 
     # Add all existing files slowly
-    DIRECTORIES.each do |dir|
+    dirs.each do |dir|
       entries = Dir.entries(dir)
       entries.shuffle!
 
@@ -46,7 +46,7 @@ module Clamd::Continuousd
 
       ten_percent = entries.size / 10
       entries.each_with_index do |file, i|
-        logger.info "Starting up (#{dir}): #{(i * 100 / entries.size)}%", "main" if i % ten_percent == 0
+        logger.info "Starting up (#{dir}): #{i * 100 / entries.size}%", "main" if i % ten_percent == 0
 
         path = File.join(dir, file)
         file_info = File.stat(path)
