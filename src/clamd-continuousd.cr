@@ -21,13 +21,13 @@ module Clamd::Continuousd
 
   def self.logger
     @@logger ||= begin
-                   l = Logger.new(STDOUT)
-                   l.level = CONFIG.debug ? Logger::DEBUG : Logger::INFO
-                   l.formatter = Logger::Formatter.new do |severity, datetime, progname, message, io|
-                     io << "[" << datetime << "] " << progname.rjust(7) << " " << severity.rjust(5) << ": " << message
-                   end
-                   l
-                 end
+      l = Logger.new(STDOUT)
+      l.level = CONFIG.debug ? Logger::DEBUG : Logger::INFO
+      l.formatter = Logger::Formatter.new do |severity, datetime, progname, message, io|
+        io << "[" << datetime << "] " << progname.rjust(7) << " " << severity.rjust(5) << ": " << message
+      end
+      l
+    end
   end
 
   def self.start
@@ -68,18 +68,18 @@ module Clamd::Continuousd
       {
         clamd_queue_size: @@clamd.@queue.queue_size,
 
-        scans_per_second_5m: Stats.scans_per_second_5m,
+        scans_per_second_5m:  Stats.scans_per_second_5m,
         scans_per_second_10s: Stats.scans_per_second_10s,
 
-        avg_scan_duration_5m: Stats.avg_scan_duration_5m,
+        avg_scan_duration_5m:  Stats.avg_scan_duration_5m,
         avg_scan_duration_10s: Stats.avg_scan_duration_10s,
 
-        executor_utilization_frac_5m: Stats.executor_utilization_frac_5m,
+        executor_utilization_frac_5m:  Stats.executor_utilization_frac_5m,
         executor_utilization_frac_10s: Stats.executor_utilization_frac_10s,
 
         new_files_per_hour: Stats.new_files_per_hour(@@files.files.each_value),
         startup_file_count: @@startup_file_count,
-        current_files: @@files.files.size
+        current_files:      @@files.files.size,
       }.to_json(ctx.response)
     end
     spawn { server.listen }
