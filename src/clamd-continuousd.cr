@@ -10,12 +10,6 @@ class Channel::Buffered(T)
   end
 end
 
-struct Time::Span
-  def self.zero
-    new(0)
-  end
-end
-
 module Clamd::Continuousd
   DIRECTORIES = ARGV
 
